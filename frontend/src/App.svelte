@@ -153,7 +153,7 @@
   const flipCoin = async (prediction) => {
     if (!flipping) {
       try {
-        const tx = await $contracts.coinflip.flip(prediction)
+        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 500000 })
         toast.push("Sending transaction")
         tx.wait().then((receipt) => {
           toast.push("Transaction confirmed")
