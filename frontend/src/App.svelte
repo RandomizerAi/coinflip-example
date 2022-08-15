@@ -332,7 +332,9 @@
   }
 
   .heads {
-    background-image: url("./heads.jpg");
+    background-image: url("./heads.png");
+    background-repeat: no-repeat;
+    background-size: 1000px 1000px;
   }
 
   .animate {
