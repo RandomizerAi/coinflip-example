@@ -332,7 +332,7 @@
   }
 
   .heads {
-    background-image: url("./heads.png");
+    background-image: url("/heads.png");
     background-repeat: no-repeat;
     background-size: 1000px 1000px;
   }
@@ -395,7 +395,7 @@
   }
 
   .tails {
-    background-image: url("./tails.jpg");
+    background-image: url("/tails.jpg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 300%;
