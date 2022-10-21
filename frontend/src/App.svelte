@@ -164,7 +164,6 @@
         else coinClass = "animate"
 
         const receipt = await tx.wait()
-        console.log()
         const requestId = parseInt(
           receipt.events.find((e) => e.address == import.meta.env["VITE_CONTRACT_RANDOMIZER"]).topics[1]
         )
