@@ -153,7 +153,7 @@
   const flipCoin = async (prediction) => {
     if (!flipping) {
       try {
-        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 1000000 })
+        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 2000000 })
         toast.push("Sending transaction")
         tx.wait().then((receipt) => {
           toast.push("Transaction confirmed")
@@ -164,13 +164,17 @@
         else coinClass = "animate"
 
         const receipt = await tx.wait()
-        let requestId
-        for (const event of receipt.events) {
-          if (event.address === import.meta.env["VITE_CONTRACT_RANDOMIZER"]) {
-            // Convert event.args[0] hex to number
-            requestId = parseInt(event.topics[1])
-          }
-        }
+        console.log()
+        const requestId = parseInt(
+          receipt.events.find((e) => e.address == import.meta.env["VITE_CONTRACT_RANDOMIZER"]).topics[1]
+        )
+
+        // for (const event of receipt.events) {
+        //   if (event.address === import.meta.env["VITE_CONTRACT_RANDOMIZER"]) {
+        //     // Convert event.args[0] hex to number
+        //     requestId = parseInt(event.topics[1])
+        //   }
+        // }
         const random = await listenForPreview(requestId, Number($chainId))
         toast.push("Real-time result received", {
           theme: {
