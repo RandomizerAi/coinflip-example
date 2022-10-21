@@ -10,7 +10,7 @@ const hre = require("hardhat");
 async function main() {
   const randomizer = await hre.ethers.getContractAt("IRandomizerDeposit", process.env.RANDOMIZER_ADDRESS);
 
-  const deposit = await randomizer.clientDeposit(process.env.COINFLIP_ADDRESS, { value: ethers.utils.parseEther("0.2") });
+  const deposit = await randomizer.clientDeposit(process.env.COINFLIP_ADDRESS, { value: ethers.utils.parseEther("0.01") });
   await deposit.wait();
   console.log("deposited");
 }

@@ -9,11 +9,11 @@ const hre = require("hardhat");
 
 async function main() {
   const CoinFlip = await hre.ethers.getContractFactory("CoinFlip");
-  const coinFlip = await CoinFlip.deploy(process.env.RANDOMIZER_ADDRESS);
+  // const coinFlip = await CoinFlip.deploy(process.env.RANDOMIZER_ADDRESS);
+  const coinFlip = CoinFlip.attach(process.env.COINFLIP_ADDRESS);
+  await coinFlip.flip(1);
 
-  await coinFlip.deployed();
-
-  console.log("Deployed:", coinFlip.address);
+  console.log("flipped");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
