@@ -12,7 +12,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 999,
+        runs: 9999,
       },
     }
   },
@@ -20,7 +20,7 @@ module.exports = {
     hardhat: {
       chainId: 1337
     },
-    arbitrumNitroDevnet: {
+    arbGoerli: {
       url: 'https://goerli-rollup.arbitrum.io/rpc',
       accounts: [process.env.PRIVATE_KEY]
     }

@@ -46,9 +46,9 @@
       },
       {
         "indexed": true,
-        "internalType": "uint128",
+        "internalType": "uint256",
         "name": "id",
-        "type": "uint128"
+        "type": "uint256"
       },
       {
         "indexed": false,
@@ -120,9 +120,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint128",
+        "internalType": "uint256",
         "name": "_id",
-        "type": "uint128"
+        "type": "uint256"
       }
     ],
     "name": "getGame",
@@ -169,9 +169,9 @@
     "name": "getPlayerGameIds",
     "outputs": [
       {
-        "internalType": "uint128[]",
+        "internalType": "uint256[]",
         "name": "",
-        "type": "uint128[]"
+        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -238,9 +238,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint128",
+        "internalType": "uint256",
         "name": "_id",
-        "type": "uint128"
+        "type": "uint256"
       },
       {
         "internalType": "bytes32",
