@@ -10,9 +10,9 @@
   import { toast } from "@zerodevx/svelte-toast"
 
   let web3Modal
-  let results = []
+  let results = {}
   let balance
-  let displayedResults = []
+  let displayedResults = {}
 
   onMount(async () => {
     // Initialize web3modal
@@ -57,31 +57,33 @@
     // Listen for FlipResult contract event and update the stored result
     // A real game should refresh the player's on-chain parameters (e.g. token balance) here as well
     $contracts.coinflip.on("FlipResult", async (player, id, seed, prediction, headsOrTails) => {
-      if (results.length) {
-        id = ethers.BigNumber.from(id).toNumber()
-        console.log("FlipResult", player, id, seed, prediction, headsOrTails)
-        console.log(player)
-        console.log($signerAddress)
-        console.log(results[id])
-        if (player == $signerAddress) {
-          console.log(results[id])
-          if (results[id] && !Object.keys(results[id]).includes("realSeed")) {
-            toast.push("Callback verified on-chain", {
-              theme: {
-                "--toastBackground": "#48BB78",
-                "--toastBarBackground": "#2F855A",
-              },
-            })
+      console.log("FlipResult", player, id, seed, prediction, headsOrTails)
+      console.log(Object.values(results).length)
+      id = ethers.BigNumber.from(id).toNumber()
+      const idString = String(id)
+      console.log("FlipResult", player, id, seed, prediction, headsOrTails)
+      if (player == $signerAddress) {
+        console.log("result data")
+        console.log(results[idString])
+        console.log(results[idString])
+        if (!Object.keys(results[idString]).includes("realSeed")) {
+          toast.push("Callback verified on-chain", {
+            theme: {
+              "--toastBackground": "#48BB78",
+              "--toastBarBackground": "#2F855A",
+            },
+          })
 
-            const previewSeed = Object.keys(Object(results[id])).includes("previewSeed") ? results[id].previewSeed : ""
-            results[id] = {
-              previewSeed,
-              realSeed: ethers.BigNumber.from(seed).toString(),
-              prediction: prediction ? "tails" : "heads",
-              result: headsOrTails ? "tails" : "heads",
-            }
-            localStorage.setItem("results." + $chainId, JSON.stringify(results))
+          const previewSeed = Object.keys(Object(results[idString])).includes("previewSeed")
+            ? results[idString].previewSeed
+            : ""
+          results[idString] = {
+            previewSeed,
+            realSeed: ethers.BigNumber.from(seed).toString(),
+            prediction: prediction ? "tails" : "heads",
+            result: headsOrTails ? "tails" : "heads",
           }
+          localStorage.setItem("results." + $chainId, JSON.stringify(results))
         }
       }
     })
@@ -203,7 +205,7 @@
         console.log("random", random)
         const result = (await $contracts.coinflip.previewResult(random)) ? "tails" : "heads"
         const predictionString = prediction ? "tails" : "heads"
-        results[requestId] = {
+        results[String(requestId)] = {
           prediction: predictionString,
           previewSeed: randomSeed,
           result: result,
@@ -288,10 +290,10 @@
           </tr>
         </thead>
         <tbody>
-          {#each displayedResults as result, i}
+          {#each Object.values(displayedResults) as result, i}
             {#if result && Object.keys(result).length}
               <tr>
-                <td>{results.indexOf(result)}</td>
+                <td>{Object.keys(displayedResults)[Object.values(displayedResults).indexOf(result)]}</td>
                 <td>{result.prediction == result.result ? "🥇" : "💩"}</td>
                 <td>{result.previewSeed ? "..." + String(result.previewSeed).substr(-5) : ""}</td>
                 <td>{result.realSeed ? "..." + String(result.realSeed).substr(-5) : "⏱"}</td>
