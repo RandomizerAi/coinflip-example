@@ -105,6 +105,42 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_keys",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "batchSetConfigUints",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_keys",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_values",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "batchSetGasEstimates",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "cancelProposeSequencer",
     "outputs": [],
@@ -132,9 +168,15 @@
   },
   {
     "inputs": [],
-    "name": "enableRenewals",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "name": "configUints",
+    "outputs": [
+      {
+        "internalType": "uint256[48]",
+        "name": "",
+        "type": "uint256[48]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -151,6 +193,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "gasEstimates",
+    "outputs": [
+      {
+        "internalType": "uint256[16]",
+        "name": "",
+        "type": "uint256[16]"
       }
     ],
     "stateMutability": "view",
@@ -199,7 +254,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "key",
+        "name": "_key",
         "type": "uint256"
       },
       {
@@ -217,7 +272,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "key",
+        "name": "_key",
         "type": "uint256"
       },
       {
@@ -259,7 +314,7 @@
   },
   {
     "inputs": [],
-    "name": "BeaconExists",
+    "name": "BeaconAlreadyRegistered",
     "type": "error"
   },
   {
@@ -329,6 +384,22 @@
       }
     ],
     "name": "FailedToSendEth",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minBlockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinHeightNotYetReached",
     "type": "error"
   },
   {
@@ -480,6 +551,11 @@
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "minConfirmations",
+            "type": "uint256"
+          },
+          {
             "internalType": "address",
             "name": "client",
             "type": "address"
@@ -546,7 +622,7 @@
       },
       {
         "internalType": "bool",
-        "name": "exists",
+        "name": "registered",
         "type": "bool"
       },
       {
@@ -687,19 +763,14 @@
         "type": "address[4]"
       },
       {
-        "internalType": "uint256[18]",
+        "internalType": "uint256[19]",
         "name": "_uintData",
-        "type": "uint256[18]"
+        "type": "uint256[19]"
       },
       {
-        "internalType": "bytes32[3]",
-        "name": "_rsAndSeed",
-        "type": "bytes32[3]"
-      },
-      {
-        "internalType": "uint8",
-        "name": "_v",
-        "type": "uint8"
+        "internalType": "bytes32",
+        "name": "seed",
+        "type": "bytes32"
       }
     ],
     "name": "submitRandom",
@@ -720,14 +791,19 @@
         "type": "address[4]"
       },
       {
-        "internalType": "uint256[18]",
+        "internalType": "uint256[19]",
         "name": "_uintData",
-        "type": "uint256[18]"
+        "type": "uint256[19]"
       },
       {
-        "internalType": "bytes32",
-        "name": "seed",
-        "type": "bytes32"
+        "internalType": "bytes32[3]",
+        "name": "_rsAndSeed",
+        "type": "bytes32[3]"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_v",
+        "type": "uint8"
       }
     ],
     "name": "submitRandom",
@@ -773,6 +849,27 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "inputLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "ConfirmationsOOB",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "deposited",
         "type": "uint256"
       },
@@ -788,11 +885,6 @@
       }
     ],
     "name": "EthDepositTooLow",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "RequestsPaused",
     "type": "error"
   },
   {
@@ -897,9 +989,62 @@
         "internalType": "uint256",
         "name": "_callbackGasLimit",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_confirmations",
+        "type": "uint256"
       }
     ],
     "name": "estimateFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "esimateFee",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_callbackGasLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "estimateFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "esimateFee",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_callbackGasLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_confirmations",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_gasPrice",
+        "type": "uint256"
+      }
+    ],
+    "name": "estimateFeeUsingConfirmationsAndGasPrice",
     "outputs": [
       {
         "internalType": "uint256",
@@ -932,6 +1077,30 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_callbackGasLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_confirmations",
+        "type": "uint256"
+      }
+    ],
+    "name": "request",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1231,11 +1400,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "RenewalsDisabled",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1262,9 +1426,9 @@
         "type": "address[4]"
       },
       {
-        "internalType": "uint256[8]",
+        "internalType": "uint256[9]",
         "name": "_uintData",
-        "type": "uint256[8]"
+        "type": "uint256[9]"
       },
       {
         "internalType": "bytes32",
@@ -1564,6 +1728,11 @@
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "minConfirmations",
+            "type": "uint256"
+          },
+          {
             "internalType": "address",
             "name": "client",
             "type": "address"
@@ -1593,7 +1762,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "caller",
+        "name": "renewer",
         "type": "address"
       },
       {
@@ -1605,7 +1774,7 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "ethToCaller",
+        "name": "ethToRenewer",
         "type": "uint256"
       }
     ],
@@ -1616,13 +1785,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "previousTreasury",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "newTreasury",
         "type": "address"
@@ -1635,13 +1804,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "previousSequencer",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "newSequencer",
         "type": "address"

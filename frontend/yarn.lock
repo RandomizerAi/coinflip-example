@@ -586,10 +586,10 @@
   resolved "https://registry.yarnpkg.com/@metamask/safe-event-emitter/-/safe-event-emitter-2.0.0.tgz#af577b477c683fad17c619a78208cede06f9605c"
   integrity sha512-/kSXhY692qiV1MXu6EeOZvg5nECLclxNXcKCxJ3cXQgYuRymRHpdx/t7JXfsK+JLjwA1e1c1/SBrlQYpusC29Q==
 
-"@randomizer.ai/sequencer-client@^0.1.1":
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/@randomizer.ai/sequencer-client/-/sequencer-client-0.1.1.tgz#468dff5792cf138e7de93fa94d3781a3760d790d"
-  integrity sha512-6Z1yZzYKvtVODnWzWRftAwoscbI21+9UtzRvy2DVK+6ngHWOA4w0ZLBUwrd8YEO1OtwQsj1A77NIWTnECgB9uw==
+"@randomizer.ai/realtime-client@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@randomizer.ai/realtime-client/-/realtime-client-0.1.4.tgz#6808ebfcdb31a85a04aa62fb5c5a405946b56489"
+  integrity sha512-FQ34Jc9BMJremz3Vt6E+xNUoSM9eVsWTbG/wiueGb6tjJYKOhlRCUT2AYILXO8Ugd8NH3FRGprG1Jwvsj+kIgQ==
 
 "@rollup/pluginutils@^4.2.1":
   version "4.2.1"

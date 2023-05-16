@@ -1,5 +1,5 @@
 <script>
-  import { listenForPreview } from "@randomizer.ai/sequencer-client"
+  import { listenForPreview } from "@randomizer.ai/realtime-client"
   import { defaultEvmStores, chainId, signerAddress, connected, contracts } from "svelte-ethers-store"
   import Web3Modal from "web3modal"
   import { onMount } from "svelte"
@@ -153,9 +153,19 @@
   const flipCoin = async (prediction) => {
     if (!flipping) {
       try {
-        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 2000000 })
+        // Use randomizer.estimateFee(callbackGasLimit) to calculate the eth fee for the callback
+        // Add 35% since fee could be higher in the next block
+        // This is fine since we refund excess fees in next flips
+        const providerGasPrice = await $contracts.randomizer.provider.getGasPrice()
+        const feeEstimate = ethers.BigNumber.from(
+          await $contracts.randomizer.estimateFeeUsingGasPrice(100000, providerGasPrice)
+        )
+          .mul(135)
+          .div(100)
+        // Attach the fee to the transaction
+        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 2000000, value: feeEstimate })
         toast.push("Sending transaction")
-        tx.wait().then((receipt) => {
+        tx.wait().then(() => {
           toast.push("Transaction confirmed")
         })
 
@@ -164,9 +174,15 @@
         else coinClass = "animate"
 
         const receipt = await tx.wait()
-        const requestId = parseInt(
-          receipt.events.find((e) => e.address == import.meta.env["VITE_CONTRACT_RANDOMIZER"]).topics[1]
-        )
+
+        const randomizerEvents = receipt.events.filter((e) => e.address == import.meta.env["VITE_CONTRACT_RANDOMIZER"])
+        const parsedEvents = randomizerEvents.map((e) => $contracts.randomizer.interface.parseLog(e))
+        // Use $contracts.randomizer.interface.parseLog to parse the event data
+        console.log(parsedEvents)
+
+        // Iterate receipt and parse each event with randomizer where the address is the randomizer contract
+
+        const requestId = parseInt(parsedEvents.find((e) => e.name === "Request").args[0])
 
         // for (const event of receipt.events) {
         //   if (event.address === import.meta.env["VITE_CONTRACT_RANDOMIZER"]) {
@@ -174,6 +190,7 @@
         //     requestId = parseInt(event.topics[1])
         //   }
         // }
+        console.log("Listen for preview result", requestId, $chainId)
         const random = await listenForPreview(requestId, Number($chainId))
         toast.push("Real-time result received", {
           theme: {
