@@ -3,12 +3,12 @@ require("dotenv").config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.16",
+  solidity: "0.8.19",
 };
 
 module.exports = {
   solidity: {
-    version: "0.8.16",
+    version: "0.8.19",
     settings: {
       optimizer: {
         enabled: true,
