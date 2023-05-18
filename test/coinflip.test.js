@@ -44,9 +44,6 @@ describe("CoinFlip", function () {
 
       const callbackReceipt = await callbackTx.wait();
 
-      let refundables = await coinFlip.getRefundables(addr1.address);
-      expect(refundables.length).to.eq(1);
-
 
       // Parse the first event with the coinFlip contract interface
       const callbackEvent = coinFlip.interface.parseLog(callbackReceipt.events[0]);
@@ -55,17 +52,17 @@ describe("CoinFlip", function () {
       expect(ethers.BigNumber.from(callbackEvent.args.id).eq(flipId)).to.be.true;
 
       // Flip again
-      const transaction = await coinFlip.connect(addr1).flip(true, { value: ethers.utils.parseEther("1") });
-      const receipt = await transaction.wait();
+      await coinFlip.connect(addr1).flip(true, { value: ethers.utils.parseEther("1") });
+      const callbackTx2 = await randomizer.connect(owner).submitRandom(flipId, ethers.utils.randomBytes(32));
+      const callbackReceipt2 = await callbackTx2.wait();
+      const callbackEvent2 = coinFlip.interface.parseLog(callbackReceipt2.events[0]);
 
       // The second flip should have refunded excess fees of the first flip
-      const event = receipt.events.find((event) => event.event === "Refund");
-      expect(event.args[0]).to.equal(addr1.address);
-      expect(ethers.BigNumber.from(event.args[1]).gt(0)).to.be.true;
-      expect(ethers.BigNumber.from(event.args[1]).lt(ethers.utils.parseEther("1"))).to.be.true;
-
-      refundables = await coinFlip.getRefundables(addr1.address);
-      expect(refundables.length).to.eq(0);
+      expect(callbackEvent2.name).to.eq("Refund");
+      expect(callbackEvent2.args.player).to.equal(addr1.address);
+      expect(ethers.BigNumber.from(callbackEvent2.args.amount).gt(0)).to.be.true;
+      expect(ethers.BigNumber.from(callbackEvent2.args.amount).lt(ethers.utils.parseEther("1"))).to.be.true;
+      expect(ethers.BigNumber.from(callbackEvent2.args.refundedGame).toString()).eq("1");
     });
   });
 });

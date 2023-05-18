@@ -16,9 +16,13 @@ interface IRandomizer {
     // Withdraws deposited ETH from the client contract to the destination address
     function clientWithdrawTo(address to, uint256 amount) external;
 
+    function getFeeStats(
+        uint256 request
+    ) external view returns (uint256[2] memory);
+
     // Returns the request data
     function getRequest(
-        uint256 _request
+        uint256 request
     )
         external
         view
@@ -51,22 +55,17 @@ contract CoinFlip {
         bool result
     );
     event OwnerUpdated(address indexed user, address indexed newOwner);
-    event Refund(
-        address indexed player,
-        uint256 amount,
-        uint256[] refundedGames
-    );
+    event Refund(address indexed player, uint256 amount, uint256 refundedGame);
 
     // Mappings to store game data and refundable amounts
     mapping(uint256 => CoinFlipGame) coinFlipGames;
     mapping(address => uint256[]) userToGames;
-    mapping(address => uint256[]) userToPendingRefundables;
+    mapping(address => uint256) userToLastCallback;
     mapping(uint256 => uint256) flipToDeposit;
 
-    // Variables to store owner details and refund amount
+    // Variables to store owner details
     address public owner;
     address public proposedOwner;
-    uint256 public refundAmount;
 
     // Reentrancy guard
     uint8 private reentrancyLock = 1;
@@ -114,19 +113,6 @@ contract CoinFlip {
         flipToDeposit[id] = msg.value;
         // Emit the Flip event
         emit Flip(msg.sender, id, prediction);
-        // Initialize the refund amount
-        // Get refundable information
-        (uint256 totalRefund, uint256[] memory refundables) = getRefundableInfo(
-            msg.sender
-        );
-        // If the refund amount is greater than zero, refund the amount to the player and delete the refunded games
-        if (totalRefund > 0) {
-            // Delete all completed refundables from storage
-            _deleteFromRefundables(refundables);
-            // Refund the total to the player
-            randomizer.clientWithdrawTo(msg.sender, totalRefund);
-            emit Refund(msg.sender, totalRefund, refundables);
-        }
     }
 
     // Callback function to be called by the Randomizer VRF when the random bytes are ready
@@ -150,61 +136,34 @@ contract CoinFlip {
         // Store the updated game details
         coinFlipGames[_id] = game;
         // Add the game id to the list of refundable games for the player
-        userToPendingRefundables[game.player].push(_id);
+        _refund(game.player);
+        // Store the new callback id for the player
+        userToLastCallback[game.player] = _id;
         // Emit the FlipResult event
         emit FlipResult(game.player, _id, seed, game.prediction, headsOrTails);
     }
 
     // Function to refund all the completed games' excess deposits to a player
     function refund() external reentrancyGuard {
-        // Get refundable information
-        (uint256 totalRefund, uint256[] memory refundables) = getRefundableInfo(
-            msg.sender
-        );
-
-        // If the total refund is greater than zero, refund the amount to the player and delete the refundable game ids
-        if (totalRefund > 0) {
-            // Delete all completed refundables from storage
-            _deleteFromRefundables(refundables);
-            // Refund the total to the player
-            randomizer.clientWithdrawTo(msg.sender, totalRefund);
-            emit Refund(msg.sender, totalRefund, refundables);
-        }
+        _refund(msg.sender);
     }
 
-    // Function to get total pending refundable amounts and all refundable ids for a player
-    function getRefundableInfo(
-        address _player
-    ) public view returns (uint256, uint256[] memory) {
-        uint256 totalRefund = 0;
-        uint256 len = userToPendingRefundables[_player].length;
-        uint256[] memory refundables = new uint256[](len);
-        uint256 refundableCount = 0;
+    // Function to refund all the completed games' excess deposits to a player
+    function _refund(address player) private {
+        // Get refundable information
+        uint256 refundableId = userToLastCallback[player];
 
-        // Iterate over the refundable games for the player
-        for (uint i = 0; i < len; i++) {
-            uint256 refundId = userToPendingRefundables[_player][i];
-            // Retrieve the fee stats for the game
-            (bytes32 result, , uint256 ethPaid, , ) = randomizer.getRequest(
-                refundId
-            );
-
-            // If the refundable request has a result (meaning it's finished) and the fee paid is less than the deposit, add the difference to the total refund
-            if (result != bytes32(0) && ethPaid < flipToDeposit[refundId]) {
-                totalRefund += flipToDeposit[refundId] - ethPaid;
-                // Store the refundable game id
-                refundables[refundableCount] = refundId;
-                refundableCount++;
+        if (refundableId > 0) {
+            uint256[2] memory feeStats = randomizer.getFeeStats(refundableId);
+            if (flipToDeposit[refundableId] > feeStats[0]) {
+                uint256 refundAmount = flipToDeposit[refundableId] -
+                    feeStats[0];
+                // Refund the excess deposit to the player
+                randomizer.clientWithdrawTo(player, refundAmount);
+                emit Refund(player, refundAmount, refundableId);
             }
+            delete userToLastCallback[player];
         }
-
-        // Resize the refundables array to the actual number of refundable games
-        uint256[] memory actualRefundables = new uint256[](refundableCount);
-        for (uint i = 0; i < refundableCount; i++) {
-            actualRefundables[i] = refundables[i];
-        }
-
-        return (totalRefund, actualRefundables);
     }
 
     // Function to retrieve the details of a game
@@ -217,13 +176,6 @@ contract CoinFlip {
         address _player
     ) external view returns (uint256[] memory) {
         return userToGames[_player];
-    }
-
-    // Function to get the pending refundable game ids for a player
-    function getRefundables(
-        address _player
-    ) external view returns (uint256[] memory) {
-        return userToPendingRefundables[_player];
     }
 
     // Function to preview the result of a game
@@ -253,22 +205,5 @@ contract CoinFlip {
         proposedOwner = address(0);
         // Emit the OwnerUpdated event
         emit OwnerUpdated(address(0), owner);
-    }
-
-    function _deleteFromRefundables(uint256[] memory _ids) private {
-        uint256[] storage refundable = userToPendingRefundables[msg.sender];
-        uint256 len = refundable.length;
-        for (uint i = 0; i < _ids.length; i++) {
-            if (_ids[i] == 0) break;
-            for (uint j = 0; j < len; j++) {
-                if (refundable[j] == _ids[i]) {
-                    refundable[j] = refundable[len - 1];
-                    refundable.pop();
-                    len--;
-                    delete flipToDeposit[_ids[i]];
-                    break;
-                }
-            }
-        }
     }
 }
