@@ -6,8 +6,9 @@ pragma solidity ^0.8.19;
 contract DummyRandomizer {
     // Struct to hold the details of a request
     struct SRequest {
+        bytes32 result;
         uint256 callbackGasLimit;
-        uint256 feePaid;
+        uint256 ethPaid;
         address client;
     }
 
@@ -32,7 +33,7 @@ contract DummyRandomizer {
             "Randomizer: insufficient funds"
         );
         requestCounter++;
-        requests[requestCounter] = SRequest(callbackGasLimit, 0, msg.sender);
+        requests[requestCounter] = SRequest(0, callbackGasLimit, 0, msg.sender);
         emit Request(requestCounter);
         return requestCounter;
     }
@@ -47,7 +48,12 @@ contract DummyRandomizer {
             "Randomizer: insufficient funds"
         );
         requestCounter++;
-        requests[requestCounter] = SRequest(callbackGasLimit, fee, msg.sender);
+        requests[requestCounter] = SRequest(
+            0,
+            callbackGasLimit,
+            fee,
+            msg.sender
+        );
         emit Request(requestCounter);
         return requestCounter;
     }
@@ -86,8 +92,31 @@ contract DummyRandomizer {
 
     // Function to return the fee paid by and refunded to the client
     function getFeeStats(uint256 id) external view returns (uint256[2] memory) {
+        return [requests[id].ethPaid, 0];
+    }
+
+    function getRequest(
+        uint256 _request
+    )
+        external
+        view
+        returns (
+            bytes32 result,
+            bytes32 dataHash,
+            uint256 ethPaid,
+            uint256 ethRefunded,
+            bytes10[2] memory vrfHashes
+        )
+    {
         // This is a dummy implementation, adjust as needed
-        return [requests[id].feePaid, 0];
+        SRequest memory req = requests[_request];
+        return (
+            req.result,
+            bytes32(blockhash(block.number - 1)),
+            req.ethPaid,
+            0,
+            [bytes10(0), bytes10(0)]
+        );
     }
 
     // Function to submit a random result
@@ -110,10 +139,11 @@ contract DummyRandomizer {
 
         // Calculate the fee paid
         uint256 gasUsed = startGas - gasleft();
-        uint256 feePaid = gasUsed * tx.gasprice;
+        uint256 ethPaid = gasUsed * tx.gasprice;
 
         // Save the fee paid to the request
-        requests[id].feePaid = feePaid;
+        requests[id].ethPaid = ethPaid;
+        requests[id].result = value;
 
         // Emit the Result event
         emit Result(id, value);

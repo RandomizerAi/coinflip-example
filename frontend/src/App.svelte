@@ -63,9 +63,6 @@
       const idString = String(id)
       console.log("FlipResult", player, id, seed, prediction, headsOrTails)
       if (player == $signerAddress) {
-        console.log("result data")
-        console.log(results[idString])
-        console.log(results[idString])
         if (!Object.keys(results[idString]).includes("realSeed")) {
           toast.push("Callback verified on-chain", {
             theme: {

@@ -43,6 +43,11 @@ describe("CoinFlip", function () {
       const callbackTx = await randomizer.connect(owner).submitRandom(flipId, ethers.utils.randomBytes(32));
 
       const callbackReceipt = await callbackTx.wait();
+
+      let refundables = await coinFlip.getRefundables(addr1.address);
+      expect(refundables.length).to.eq(1);
+
+
       // Parse the first event with the coinFlip contract interface
       const callbackEvent = coinFlip.interface.parseLog(callbackReceipt.events[0]);
 
@@ -58,6 +63,9 @@ describe("CoinFlip", function () {
       expect(event.args[0]).to.equal(addr1.address);
       expect(ethers.BigNumber.from(event.args[1]).gt(0)).to.be.true;
       expect(ethers.BigNumber.from(event.args[1]).lt(ethers.utils.parseEther("1"))).to.be.true;
+
+      refundables = await coinFlip.getRefundables(addr1.address);
+      expect(refundables.length).to.eq(0);
     });
   });
 });
