@@ -150,9 +150,7 @@ contract CoinFlip {
 
     // Function to refund all the completed games' excess deposits to a player
     function _refund(address player) private {
-        // Get refundable information
         uint256 refundableId = userToLastCallback[player];
-
         if (refundableId > 0) {
             uint256[2] memory feeStats = randomizer.getFeeStats(refundableId);
             if (flipToDeposit[refundableId] > feeStats[0]) {
