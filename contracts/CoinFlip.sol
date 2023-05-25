@@ -20,6 +20,11 @@ interface IRandomizer {
         uint256 request
     ) external view returns (uint256[2] memory);
 
+    // Gets the amount of ETH deposited and reserved for the client contract
+    function clientBalanceOf(
+        address _client
+    ) external view returns (uint256 deposit, uint256 reserved);
+
     // Returns the request data
     function getRequest(
         uint256 request
@@ -145,23 +150,35 @@ contract CoinFlip {
 
     // Function to refund all the completed games' excess deposits to a player
     function refund() external reentrancyGuard {
-        _refund(msg.sender);
+        require(_refund(msg.sender), "ZERO_REFUNDABLE");
     }
 
     // Function to refund all the completed games' excess deposits to a player
-    function _refund(address player) private {
+    // NOTE: The contract should have a small buffer of ETH to ensure there is always enough to refund
+    function _refund(address player) private returns (bool) {
         uint256 refundableId = userToLastCallback[player];
         if (refundableId > 0) {
             uint256[2] memory feeStats = randomizer.getFeeStats(refundableId);
             if (flipToDeposit[refundableId] > feeStats[0]) {
-                uint256 refundAmount = flipToDeposit[refundableId] -
-                    feeStats[0];
-                // Refund the excess deposit to the player
-                randomizer.clientWithdrawTo(player, refundAmount);
-                emit Refund(player, refundAmount, refundableId);
+                // Refund 90% of the excess deposit back to the player
+                // We keep the rest as a buffer
+                uint256 refundAmount = ((flipToDeposit[refundableId] -
+                    feeStats[0]) * 9) / 10;
+
+                // Check if the refundAmount is available
+                // ethReserved is the amount currently reserved for pending requests
+                (uint256 ethDeposit, uint256 ethReserved) = randomizer
+                    .clientBalanceOf(address(this));
+                if (refundAmount <= ethDeposit - ethReserved) {
+                    // Refund the excess deposit to the player
+                    randomizer.clientWithdrawTo(player, refundAmount);
+                    emit Refund(player, refundAmount, refundableId);
+                    delete userToLastCallback[player];
+                    return true;
+                }
             }
-            delete userToLastCallback[player];
         }
+        return false;
     }
 
     // Function to retrieve the details of a game

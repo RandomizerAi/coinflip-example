@@ -23,6 +23,10 @@ module.exports = {
     arbGoerli: {
       url: 'https://goerli-rollup.arbitrum.io/rpc',
       accounts: [process.env.PRIVATE_KEY]
-    }
+    },
+    arbitrumMainnet: {
+      url: process.env.PROVIDER_ARBITRUM || 'https://arb1.arbitrum.io/rpc',
+      accounts: [process.env.PRIVATE_KEY]
+    },
   }
 };
