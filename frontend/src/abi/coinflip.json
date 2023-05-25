@@ -105,6 +105,12 @@
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "refundedGame",
+        "type": "uint256"
       }
     ],
     "name": "Refund",
@@ -292,15 +298,9 @@
   },
   {
     "inputs": [],
-    "name": "refundAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "refund",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

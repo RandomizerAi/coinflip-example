@@ -54,6 +54,14 @@
       }
     }
 
+    $contracts.coinflip.on("*", (event) => {
+      console.log("Coinflip event", event)
+    })
+
+    $contracts.randomizer.on("*", (event) => {
+      console.log("Randomizer event", event)
+    })
+
     // Listen for FlipResult contract event and update the stored result
     // A real game should refresh the player's on-chain parameters (e.g. token balance) here as well
     $contracts.coinflip.on("FlipResult", async (player, id, seed, prediction, headsOrTails) => {
@@ -61,7 +69,6 @@
       console.log(Object.values(results).length)
       id = ethers.BigNumber.from(id).toNumber()
       const idString = String(id)
-      console.log("FlipResult", player, id, seed, prediction, headsOrTails)
       if (player == $signerAddress) {
         if (!Object.keys(results[idString]).includes("realSeed")) {
           toast.push("Callback verified on-chain", {
@@ -97,7 +104,7 @@
   }
 
   let error
-  $: if ($chainId != 421613) {
+  $: if (![421613, 42161].includes(Number($chainId))) {
     error = "Please connect to Arbitrum Nitro Goerli Testnet"
   } else {
     error = undefined
@@ -174,7 +181,11 @@
 
         const receipt = await tx.wait()
 
-        const randomizerEvents = receipt.events.filter((e) => e.address == import.meta.env["VITE_CONTRACT_RANDOMIZER"])
+        console.log(receipt.events)
+
+        const randomizerEvents = receipt.events.filter(
+          (e) => String(e.address).toLowerCase() == String(import.meta.env["VITE_CONTRACT_RANDOMIZER"]).toLowerCase()
+        )
         const parsedEvents = randomizerEvents.map((e) => $contracts.randomizer.interface.parseLog(e))
         // Use $contracts.randomizer.interface.parseLog to parse the event data
         console.log(parsedEvents)
