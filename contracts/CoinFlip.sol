@@ -155,6 +155,7 @@ contract CoinFlip {
 
     // Function to refund all the completed games' excess deposits to a player
     // NOTE: The contract should have a small buffer of ETH to ensure there is always enough to refund
+    // even in the case of reserved ETH due to simultaneous pending requests
     function _refund(address player) private returns (bool) {
         uint256 refundableId = userToLastCallback[player];
         if (refundableId > 0) {
