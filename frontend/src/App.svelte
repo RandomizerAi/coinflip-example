@@ -104,7 +104,8 @@
   }
 
   let error
-  $: if (![421613, 42161].includes(Number($chainId))) {
+  // $: if (![421613, 42161].includes(Number($chainId))) {
+  $: if ($chainId != 421613) {
     error = "Please connect to Arbitrum Nitro Goerli Testnet"
   } else {
     error = undefined
