@@ -25,6 +25,12 @@ contract DummyRandomizer {
     // Counter for request ids
     uint256 public requestCounter;
 
+    function clientBalanceOf(
+        address _client
+    ) external view returns (uint256 deposit, uint256 reserved) {
+        return (clientToDeposit[_client], 0);
+    }
+
     // Function to make a Randomizer VRF callback request with a callback gas limit
     function request(uint256 callbackGasLimit) external returns (uint256) {
         uint256 fee = estimateFee(callbackGasLimit);
