@@ -170,7 +170,7 @@ contract CoinFlip {
                 // ethReserved is the amount currently reserved for pending requests
                 (uint256 ethDeposit, uint256 ethReserved) = randomizer
                     .clientBalanceOf(address(this));
-                if (refundAmount <= ethDeposit - ethReserved) {
+                if (ethDeposit > ethReserved && refundAmount <= ethDeposit - ethReserved) {
                     // Refund the excess deposit to the player
                     randomizer.clientWithdrawTo(player, refundAmount);
                     emit Refund(player, refundAmount, refundableId);
