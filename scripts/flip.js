@@ -10,8 +10,14 @@ const hre = require("hardhat");
 async function main() {
   const CoinFlip = await hre.ethers.getContractFactory("CoinFlip");
   // const coinFlip = await CoinFlip.deploy(process.env.RANDOMIZER_ADDRESS);
+
   const coinFlip = CoinFlip.attach(process.env.COINFLIP_ADDRESS);
-  await coinFlip.flip(1);
+
+  coinFlip.on("FlipResult", (player, id, seed, prediction, result) => {
+    console.log({ player, id, seed, prediction, result });
+  });
+
+  await coinFlip.flip(1, { value: ethers.utils.parseEther("0.01") });
 
   console.log("flipped");
 }

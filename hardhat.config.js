@@ -14,19 +14,27 @@ module.exports = {
         enabled: true,
         runs: 9999,
       },
-    }
+    },
   },
   networks: {
     hardhat: {
-      chainId: 1337
+      chainId: 1337,
     },
     arbGoerli: {
-      url: 'https://goerli-rollup.arbitrum.io/rpc',
-      accounts: [process.env.PRIVATE_KEY]
+      url: "https://goerli-rollup.arbitrum.io/rpc",
+      accounts: [process.env.PRIVATE_KEY],
     },
     arbitrumMainnet: {
-      url: process.env.PROVIDER_ARBITRUM || 'https://arb1.arbitrum.io/rpc',
-      accounts: [process.env.PRIVATE_KEY]
+      url: process.env.PROVIDER_ARBITRUM || "https://arb1.arbitrum.io/rpc",
+      accounts: [process.env.PRIVATE_KEY],
     },
-  }
+    sanko: {
+      url: process.env.SANKO_MAINNET_RPC,
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 1996,
+      contracts: {
+        randomizer: process.env.SANKO_MAINNET_RANDOMIZER,
+      },
+    },
+  },
 };

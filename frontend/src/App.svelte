@@ -1,159 +1,177 @@
 <script>
-  import { listenForPreview } from "@randomizer.ai/realtime-client"
-  import { defaultEvmStores, chainId, signerAddress, connected, contracts } from "svelte-ethers-store"
-  import Web3Modal from "web3modal"
-  import { onMount } from "svelte"
-  import { ethers } from "ethers"
-  import abi from "./abi/coinflip.json"
-  import randomizerAbi from "./abi/randomizer.json"
-  import { SvelteToast } from "@zerodevx/svelte-toast"
-  import { toast } from "@zerodevx/svelte-toast"
+  import { listenForPreview } from "@randomizer.ai/realtime-client";
+  import {
+    defaultEvmStores,
+    chainId,
+    signerAddress,
+    connected,
+    contracts,
+  } from "svelte-ethers-store";
+  import Web3Modal from "web3modal";
+  import { onMount } from "svelte";
+  import { ethers } from "ethers";
+  import abi from "./abi/coinflip.json";
+  import randomizerAbi from "./abi/randomizer.json";
+  import { SvelteToast } from "@zerodevx/svelte-toast";
+  import { toast } from "@zerodevx/svelte-toast";
+  import networks from "./networks.json";
 
-  let web3Modal
-  let results = {}
-  let balance
-  let displayedResults = {}
+  let web3Modal;
+  let results = {};
+  let balance;
+  let displayedResults = {};
 
   onMount(async () => {
     // Initialize web3modal
     web3Modal = new Web3Modal({
       theme: "dark",
-    })
-    const provider = await web3Modal.connect()
-    await defaultEvmStores.setProvider(provider)
+    });
+    const provider = await web3Modal.connect();
+    await defaultEvmStores.setProvider(provider);
 
-    // Attach contracts
-    if (import.meta.env["VITE_CONTRACT"]) {
+    // Attach contracts if we're on a supported network
+    const network = Object.values(networks).find(
+      (n) => n.chainId === Number($chainId)
+    );
+    if (network) {
       await defaultEvmStores.attachContract(
         "coinflip",
-        //@ts-ignore
-        import.meta.env["VITE_CONTRACT"],
+        network.contract,
         JSON.stringify(abi)
-      )
+      );
 
       await defaultEvmStores.attachContract(
         "randomizer",
-        //@ts-ignore
-        import.meta.env["VITE_CONTRACT_RANDOMIZER"],
+        network.randomizer,
         JSON.stringify(randomizerAbi)
-      )
+      );
 
       // Get saved results from localStorage
-      const storedResults = localStorage.getItem("results." + $chainId)
+      const storedResults = localStorage.getItem("results." + $chainId);
       if (storedResults) {
-        results = JSON.parse(storedResults)
+        results = JSON.parse(storedResults);
       }
 
       // This contract uses a fake balance. Real smart contract games should have on-chain balances.
-      const storedBalance = Number(localStorage.getItem("balance"))
+      const storedBalance = Number(localStorage.getItem("balance"));
       if (storedBalance && storedBalance > 0) {
-        balance = storedBalance
+        balance = storedBalance;
       } else {
-        balance = 100
-        localStorage.setItem("balance", String(100))
+        balance = 100;
+        localStorage.setItem("balance", String(100));
       }
     }
 
     $contracts.coinflip.on("*", (event) => {
-      console.log("Coinflip event", event)
-    })
+      console.log("Coinflip event", event);
+    });
 
     $contracts.randomizer.on("*", (event) => {
-      console.log("Randomizer event", event)
-    })
+      console.log("Randomizer event", event);
+    });
 
     // Listen for FlipResult contract event and update the stored result
     // A real game should refresh the player's on-chain parameters (e.g. token balance) here as well
-    $contracts.coinflip.on("FlipResult", async (player, id, seed, prediction, headsOrTails) => {
-      console.log("FlipResult", player, id, seed, prediction, headsOrTails)
-      console.log(Object.values(results).length)
-      id = ethers.BigNumber.from(id).toNumber()
-      const idString = String(id)
-      if (player == $signerAddress) {
-        if (!Object.keys(results[idString]).includes("realSeed")) {
-          toast.push("Callback verified on-chain", {
-            theme: {
-              "--toastBackground": "#48BB78",
-              "--toastBarBackground": "#2F855A",
-            },
-          })
+    $contracts.coinflip.on(
+      "FlipResult",
+      async (player, id, seed, prediction, headsOrTails) => {
+        console.log("FlipResult", player, id, seed, prediction, headsOrTails);
+        console.log(Object.values(results).length);
+        id = ethers.BigNumber.from(id).toNumber();
+        const idString = String(id);
+        if (player == $signerAddress) {
+          if (!Object.keys(results[idString]).includes("realSeed")) {
+            toast.push("Callback verified on-chain", {
+              theme: {
+                "--toastBackground": "#48BB78",
+                "--toastBarBackground": "#2F855A",
+              },
+            });
 
-          const previewSeed = Object.keys(Object(results[idString])).includes("previewSeed")
-            ? results[idString].previewSeed
-            : ""
-          results[idString] = {
-            previewSeed,
-            realSeed: ethers.BigNumber.from(seed).toString(),
-            prediction: prediction ? "tails" : "heads",
-            result: headsOrTails ? "tails" : "heads",
+            const previewSeed = Object.keys(Object(results[idString])).includes(
+              "previewSeed"
+            )
+              ? results[idString].previewSeed
+              : "";
+            results[idString] = {
+              previewSeed,
+              realSeed: ethers.BigNumber.from(seed).toString(),
+              prediction: prediction ? "tails" : "heads",
+              result: headsOrTails ? "tails" : "heads",
+            };
+            localStorage.setItem(
+              "results." + $chainId,
+              JSON.stringify(results)
+            );
           }
-          localStorage.setItem("results." + $chainId, JSON.stringify(results))
         }
       }
-    })
-  })
+    );
+  });
 
   // Have displayedResults only be the 5 most recent results
   $: if (results) {
     // displayedResults should be the the 5 latest results
     if (results.length > 5) {
-      displayedResults = results.slice(Math.max(results.length - 5, 0))
+      displayedResults = results.slice(Math.max(results.length - 5, 0));
     } else {
-      displayedResults = results
+      displayedResults = results;
     }
   }
 
-  let error
-  // $: if (![421613, 42161].includes(Number($chainId))) {
-  $: if ($chainId != 421613) {
-    error = "Please connect to Arbitrum Nitro Goerli Testnet"
-  } else {
-    error = undefined
+  let error;
+  $: {
+    const supportedChainIds = Object.values(networks).map((n) => n.chainId);
+    if (!supportedChainIds.includes(Number($chainId))) {
+      error = `Please connect to one of the supported networks: ${Object.keys(networks).join(", ")}`;
+    } else {
+      error = undefined;
+    }
   }
 
   // Update any contract state values here that belong to the connected wallet
   const updateContractVars = async () => {
     if (web3Modal) {
-      const provider = await web3Modal.connect()
-      await defaultEvmStores.setProvider(provider)
+      const provider = await web3Modal.connect();
+      await defaultEvmStores.setProvider(provider);
     }
-  }
+  };
 
   // Update app "provider" state when user changes wallet or network
   $: if (abi && $connected && $signerAddress) {
-    updateContractVars()
+    updateContractVars();
   }
 
-  let coin
-  let status
-  let heads
-  let tails
+  let coin;
+  let status;
+  let heads;
+  let tails;
 
-  let headsCount = 0
-  let tailsCount = 0
+  let headsCount = 0;
+  let tailsCount = 0;
 
-  let coinClass = ""
+  let coinClass = "";
 
-  let flipping = false
-  let lastResult = "heads"
+  let flipping = false;
+  let lastResult = "heads";
 
   // Update the balance based on the result of the last flip
   function processResult(result, prediction) {
     if (result === "heads") {
-      headsCount++
-      heads.innerText = headsCount
+      headsCount++;
+      heads.innerText = headsCount;
     } else {
-      tailsCount++
-      tails.innerText = tailsCount
+      tailsCount++;
+      tails.innerText = tailsCount;
     }
     // Check if prediction is correct and update balance
     if (result === prediction) {
-      balance += 1
+      balance += 1;
     } else {
-      balance -= 1
+      balance -= 1;
     }
-    localStorage.setItem("balance", String(balance))
-    lastResult = result
+    localStorage.setItem("balance", String(balance));
+    lastResult = result;
   }
 
   // Flips the coin, awaits the real-time result from Randomizer's Sequencer, and then processes it
@@ -163,37 +181,53 @@
         // Use randomizer.estimateFee(callbackGasLimit) to calculate the eth fee for the callback
         // Add 35% since fee could be higher in the next block
         // This is fine since we refund excess fees in next flips
-        const providerGasPrice = await $contracts.randomizer.provider.getGasPrice()
+        const providerGasPrice =
+          await $contracts.randomizer.provider.getGasPrice();
         const feeEstimate = ethers.BigNumber.from(
-          await $contracts.randomizer.estimateFeeUsingGasPrice(100000, providerGasPrice)
+          await $contracts.randomizer.estimateFeeUsingGasPrice(
+            100000,
+            providerGasPrice
+          )
         )
           .mul(135)
-          .div(100)
+          .div(100);
         // Attach the fee to the transaction
-        const tx = await $contracts.coinflip.flip(prediction, { gasLimit: 2000000, value: feeEstimate })
-        toast.push("Sending transaction")
+        const tx = await $contracts.coinflip.flip(prediction, {
+          gasLimit: 2000000,
+          value: feeEstimate,
+        });
+        toast.push("Sending transaction");
         tx.wait().then(() => {
-          toast.push("Transaction confirmed")
-        })
+          toast.push("Transaction confirmed");
+        });
 
-        flipping = true
-        if (lastResult === "tails") coinClass = "animate-from-tails"
-        else coinClass = "animate"
+        flipping = true;
+        if (lastResult === "tails") coinClass = "animate-from-tails";
+        else coinClass = "animate";
 
-        const receipt = await tx.wait()
+        const receipt = await tx.wait();
 
-        console.log(receipt.events)
+        console.log(receipt.events);
 
+        const network = Object.values(networks).find(
+          (n) => n.chainId === Number($chainId)
+        );
         const randomizerEvents = receipt.events.filter(
-          (e) => String(e.address).toLowerCase() == String(import.meta.env["VITE_CONTRACT_RANDOMIZER"]).toLowerCase()
-        )
-        const parsedEvents = randomizerEvents.map((e) => $contracts.randomizer.interface.parseLog(e))
+          (e) =>
+            String(e.address).toLowerCase() ==
+            String(network.randomizer).toLowerCase()
+        );
+        const parsedEvents = randomizerEvents.map((e) =>
+          $contracts.randomizer.interface.parseLog(e)
+        );
         // Use $contracts.randomizer.interface.parseLog to parse the event data
-        console.log(parsedEvents)
+        console.log(parsedEvents);
 
         // Iterate receipt and parse each event with randomizer where the address is the randomizer contract
 
-        const requestId = parseInt(parsedEvents.find((e) => e.name === "Request").args[0])
+        const requestId = parseInt(
+          parsedEvents.find((e) => e.name === "Request").args[0]
+        );
 
         // for (const event of receipt.events) {
         //   if (event.address === import.meta.env["VITE_CONTRACT_RANDOMIZER"]) {
@@ -201,49 +235,51 @@
         //     requestId = parseInt(event.topics[1])
         //   }
         // }
-        console.log("Listen for preview result", requestId, $chainId)
-        const random = await listenForPreview(requestId, Number($chainId))
+        console.log("Listen for preview result", requestId, $chainId);
+        const random = await listenForPreview(requestId, Number($chainId));
         toast.push("Real-time result received", {
           theme: {
             "--toastBackground": "#48BB78",
             "--toastBarBackground": "#2F855A",
           },
-        })
+        });
         // Convert random hex to BigNumber
-        const randomSeed = ethers.BigNumber.from(random).toString()
-        console.log("random", random)
-        const result = (await $contracts.coinflip.previewResult(random)) ? "tails" : "heads"
-        const predictionString = prediction ? "tails" : "heads"
+        const randomSeed = ethers.BigNumber.from(random).toString();
+        console.log("random", random);
+        const result = (await $contracts.coinflip.previewResult(random))
+          ? "tails"
+          : "heads";
+        const predictionString = prediction ? "tails" : "heads";
         results[String(requestId)] = {
           prediction: predictionString,
           previewSeed: randomSeed,
           result: result,
-        }
+        };
 
         // Store results in localStorage
-        localStorage.setItem("results." + $chainId, JSON.stringify(results))
+        localStorage.setItem("results." + $chainId, JSON.stringify(results));
 
-        console.log("result", result)
+        console.log("result", result);
 
-        processResult(result, predictionString)
-        flipping = false
+        processResult(result, predictionString);
+        flipping = false;
         setTimeout(() => {
-          coinClass = "end-" + result
+          coinClass = "end-" + result;
           // coinClass = ""
-        }, 100)
+        }, 100);
       } catch (e) {
-        console.error(e)
+        console.error(e);
         toast.push("Network RPC error. Try again.", {
           theme: {
             "--toastBackground": "#F56565",
             "--toastBarBackground": "#C53030",
           },
-        })
-        flipping = false
-        coinClass = ""
+        });
+        flipping = false;
+        coinClass = "";
       }
     }
-  }
+  };
 </script>
 
 <SvelteToast />
@@ -255,13 +291,19 @@
     </div>
   {:else}
     <div class="container">
-      <p>Coinflip with randomizer on Arbitrum Nitro Testnet</p>
+      <p>
+        Coinflip with randomizer on {Object.entries(networks).find(
+          ([_, n]) => n.chainId === Number($chainId)
+        )?.[0] ?? "Unknown Network"}
+      </p>
 
-      <p style="margin:-10px; font-size:0.8em;">{$signerAddress ? $signerAddress : ""}</p>
+      <p style="margin:-10px; font-size:0.8em;">
+        {$signerAddress ? $signerAddress : ""}
+      </p>
 
       <p style=" font-size:0.8em; margin-bottom: -20px;">
         <a
-          href="https://twitter.com/intent/tweet?text=ok%20I%20need%20@arbitrum%20to%20give%20me%20Nitro%20testnet%20gas.%20like%20VERY%20SOON.%20I%20cant%20take%20this,%20I%E2%80%99ve%20been%20waiting%20for%20@nitro_devnet%20release.%20I%20just%20want%20to%20start%20developing.%20but%20I%20need%20the%20gas%20IN%20MY%20WALLET%20NOW.%20can%20devs%20DO%20SOMETHING??%20%20SEND%20HERE:%200xAddA0B73Fe69a6E3e7c1072Bb9523105753e08f8"
+          href="https://twitter.com/intent/tweet?text=ok%20I%20need%20@arbitrum%20to%20give%20me%20Nitro%20testnet%20gas.%20like%20VERY%20SOON.%20I%E2%80%99ve%20been%20waiting%20for%20@nitro_devnet%20release.%20I%20just%20want%20to%20start%20developing.%20but%20I%20need%20the%20gas%20IN%20MY%20WALLET%20NOW.%20can%20devs%20DO%20SOMETHING??%20%20SEND%20HERE:%200xAddA0B73Fe69a6E3e7c1072Bb9523105753e08f8"
           style="color: #b7c6cc;">Request testnet ETH</a
         >
       </p>
@@ -274,20 +316,29 @@
 
       <!-- Buttons -->
       <div style="display: flex; justify-content: space-between;">
-        <button id="flip" on:click={() => flipCoin(false)} style="margin: 6px;">Heads</button>
-        <button id="flip" on:click={() => flipCoin(true)} style="margin: 6px;;">Tails</button>
+        <button id="flip" on:click={() => flipCoin(false)} style="margin: 6px;"
+          >Heads</button
+        >
+        <button id="flip" on:click={() => flipCoin(true)} style="margin: 6px;;"
+          >Tails</button
+        >
         <div id="status" bind:this={status} />
       </div>
 
       <!-- Game data -->
       <p>Balance: {balance}</p>
-      <p>Heads: <span id="headsCount" bind:this={heads}>0</span> Tails: <span id="tailsCount" bind:this={tails}>0</span></p>
+      <p>
+        Heads: <span id="headsCount" bind:this={heads}>0</span> Tails:
+        <span id="tailsCount" bind:this={tails}>0</span>
+      </p>
       <p><span bind:this={status} id="status" /></p>
     </div>
 
     <!-- Show 5 most recent games -->
     <div>
-      <h2 style="margin-bottom: 20px; text-align: left; margin-left: 5px;">Recent games</h2>
+      <h2 style="margin-bottom: 20px; text-align: left; margin-left: 5px;">
+        Recent games
+      </h2>
       <table>
         <thead>
           <tr>
@@ -302,12 +353,25 @@
           {#each Object.values(displayedResults) as result, i}
             {#if result && Object.keys(result).length}
               <tr>
-                <td>{Object.keys(displayedResults)[Object.values(displayedResults).indexOf(result)]}</td>
+                <td
+                  >{Object.keys(displayedResults)[
+                    Object.values(displayedResults).indexOf(result)
+                  ]}</td
+                >
                 <td>{result.prediction == result.result ? "🥇" : "💩"}</td>
-                <td>{result.previewSeed ? "..." + String(result.previewSeed).substr(-5) : ""}</td>
-                <td>{result.realSeed ? "..." + String(result.realSeed).substr(-5) : "⏱"}</td>
+                <td
+                  >{result.previewSeed
+                    ? "..." + String(result.previewSeed).substr(-5)
+                    : ""}</td
+                >
+                <td
+                  >{result.realSeed
+                    ? "..." + String(result.realSeed).substr(-5)
+                    : "⏱"}</td
+                >
                 {#if result.previewSeed && result.realSeed}
-                  <td>{result.previewSeed === result.realSeed ? "✅" : "❌"}</td>
+                  <td>{result.previewSeed === result.realSeed ? "✅" : "❌"}</td
+                  >
                 {:else if result.previewSeed}
                   <td>🔍</td>
                 {:else if result.realSeed}
@@ -320,7 +384,8 @@
       </table>
       <p>
         <small
-          >Preview seed is sent by randomizer's sequencer to the player when the result is determined for instant feedback.</small
+          >Preview seed is sent by randomizer's sequencer to the player when the
+          result is determined for instant feedback.</small
         >
       </p>
     </div>
