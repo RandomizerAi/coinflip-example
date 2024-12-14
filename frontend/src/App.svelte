@@ -9,7 +9,7 @@
   } from "svelte-ethers-store";
   import Web3Modal from "web3modal";
   import { onMount } from "svelte";
-  import { ethers } from "ethers";
+  import { BigNumber } from "ethers";
   import abi from "./abi/coinflip.json";
   import randomizerAbi from "./abi/randomizer.json";
   import { SvelteToast } from "@zerodevx/svelte-toast";
@@ -77,7 +77,7 @@
       async (player, id, seed, prediction, headsOrTails) => {
         console.log("FlipResult", player, id, seed, prediction, headsOrTails);
         console.log(Object.values(results).length);
-        id = ethers.BigNumber.from(id).toNumber();
+        id = BigNumber.from(id).toNumber();
         const idString = String(id);
         if (player == $signerAddress) {
           if (!Object.keys(results[idString]).includes("realSeed")) {
@@ -95,7 +95,7 @@
               : "";
             results[idString] = {
               previewSeed,
-              realSeed: ethers.BigNumber.from(seed).toString(),
+              realSeed: BigNumber.from(seed).toString(),
               prediction: prediction ? "tails" : "heads",
               result: headsOrTails ? "tails" : "heads",
             };
@@ -183,7 +183,7 @@
         // This is fine since we refund excess fees in next flips
         const providerGasPrice =
           await $contracts.randomizer.provider.getGasPrice();
-        const feeEstimate = ethers.BigNumber.from(
+        const feeEstimate = BigNumber.from(
           await $contracts.randomizer.estimateFeeUsingGasPrice(
             100000,
             providerGasPrice
@@ -244,7 +244,7 @@
           },
         });
         // Convert random hex to BigNumber
-        const randomSeed = ethers.BigNumber.from(random).toString();
+        const randomSeed = BigNumber.from(random).toString();
         console.log("random", random);
         const result = (await $contracts.coinflip.previewResult(random))
           ? "tails"
