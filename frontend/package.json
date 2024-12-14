@@ -23,5 +23,5 @@
     "svelte-web3": "^3.6.0",
     "web3modal": "^1.9.12"
   },
-  "packageManager": "yarn@4.5.3"
+  "packageManager": "yarn@1.22.19"
 }
