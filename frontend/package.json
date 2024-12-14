@@ -22,5 +22,6 @@
     "svelte-ethers-store": "^2.6.1",
     "svelte-web3": "^3.6.0",
     "web3modal": "^1.9.12"
-  }
+  },
+  "packageManager": "yarn@4.5.3"
 }
